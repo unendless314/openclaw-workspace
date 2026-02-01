@@ -47,4 +47,26 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 ---
 
+## Git / GitHub Setup (本機專用)
+
+### 這台機器的 Git 配置
+
+- **GitHub CLI (`gh`)** 已安裝並登入為 `unendless314`
+- **認證方式**: 透過 `gh auth login` 設定，儲存在系統金鑰庫
+- **倉庫位置**: `~/.openclaw/workspace/`
+- **遠端**: `https://github.com/unendless314/openclaw-workspace.git`
+
+### 常用指令
+
+```bash
+cd ~/.openclaw/workspace
+git add .
+git commit -m "更新說明"
+git push
+```
+
+> ⚠️ **注意**: 這是這台 Linux 機器的特定配置。如果換到 Mac/Windows，小林可能會回到 GitHub Desktop 操作，屆時需要重新確認他的偏好。
+
+---
+
 Add whatever helps you do your job. This is your cheat sheet.
