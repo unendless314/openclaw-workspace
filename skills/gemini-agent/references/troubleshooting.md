@@ -16,7 +16,6 @@ Your quota will reset after 0s.. Retrying after 715.990087ms...
 1. Wait for quota reset (usually within 24 hours)
 2. Check status file for `failed` status
 3. Retry the task after some time
-4. Consider using shorter prompts to reduce token usage
 
 ### Issue: No output in file but status shows "completed"
 

@@ -11,6 +11,10 @@ Delegate planning, research, drafting, and analysis to the Google Gemini agent. 
 
 Begin with a concise checklist (3-7 bullets) of planned sub-tasks before delegating any multi-step task to Gemini; keep checklist items conceptual rather than implementation-level.
 
+Always validate outputs after each major workflow step; if critical results are missing, self-correct or flag for review before presenting to the user.
+
+**Important Note**: Gemini agent cannot write files due to environment limitations. Always use the wrapper script to capture Gemini's output to the specified file path.
+
 ```
 User Request
     ↓
@@ -18,16 +22,16 @@ User Request
     ↓
 [You] Delegate to Gemini (if appropriate)
     ↓
-[Gemini] Execute & Save Results
+[Gemini] Execute & Report
+    ↓
+[Script] Save Results (via wrapper)
     ↓
 [You] Synthesize & Add Value
     ↓
 [You] Present to User
 ```
 
----
-
-## Unified Execution
+## Execution Script
 
 This skill includes `scripts/gemini-run.sh` which provides:
 - **Guaranteed file output** - Never lose results due to execution method inconsistencies
@@ -43,13 +47,40 @@ bash command:"workspace/skills/gemini-agent/scripts/gemini-run.sh 'Your prompt' 
 
 # Background execution
 bash background:true command:"workspace/skills/gemini-agent/scripts/gemini-run.sh 'Your prompt' 'workspace/gemini/out/topic/output.md'"
+
+# Retry with exponential backoff for important task（capped at 5）
+bash workspace/skills/gemini-agent/scripts/gemini-run.sh --max-retries 5 "Your prompt" "output.md"
 ```
 
 ## Critical Constraints
 
-1. **HIGH LATENCY**: 30-120s per call
+1. **HIGH LATENCY**: Expect 30s for simple queries, 4-8min for research/writing tasks
+   - Simple Q&A: 30-60s
+   - Analysis/Structuring: 60-180s
+   - Web Research: 3-5min (includes search + reading)
+   - Research + Drafting: 4-8min
 2. **RATE LIMITING**: Free tier 1000 calls/day—avoid mass concurrent jobs.
 3. **ALWAYS USE WRAPPER**: Never call `gemini` directly without wrapper
+
+### Timeout Guidelines
+
+Set appropriate timeouts based on task complexity:
+
+```bash
+# Quick queries
+bash command:"..." timeout:60
+
+# Analysis tasks
+bash command:"..." timeout:180
+
+# Research tasks
+bash command:"..." timeout:300
+
+# Complex multi-step tasks
+bash command:"..." timeout:600
+```
+
+**Don't be impatient**—complex tasks legitimately take 3-5 minutes. Premature termination wastes work and quota.
 
 ## Directory Structure
 
@@ -72,8 +103,6 @@ workspace/
 **Naming conventions:**
 - `slug`: kebab-case (e.g., `quantum-entanglement`, `react-router-migration`)
 - iteration files: `step{N}.md` (e.g., `step01.md`, `step02.md`)
-
-## Execution Patterns
 
 ### Simple Task (One-shot)
 
@@ -104,6 +133,42 @@ bash command:"workspace/skills/gemini-agent/scripts/gemini-run.sh 'Read workspac
 bash command:"workspace/skills/gemini-agent/scripts/gemini-run.sh 'Read workspace/gemini/draft/[topic]/step01.md, generate final report' 'workspace/gemini/out/[topic]/final.md'"
 ```
 
+## Structured Prompting (Recommended)
+
+For best results with Gemini, use a **structured prompt format** to maximize compliance:
+
+```
+[ROLE]
+Define who Gemini should be (researcher, coder, analyst, etc.)
+
+[OBJECTIVE]
+Clear, actionable goal with success criteria
+
+[CONTEXT & REFERENCES]
+Background info and source materials
+
+[STRATEGY & FALLBACK PROTOCOL]
+Step-by-step approach and what to do if stuck
+- For research: explicitly mention `google_web_search` or `web_fetch`
+
+[OUTPUT FORMAT]
+Explicit file path and expected structure
+
+[QUALITY CONTROL CHECKLIST]
+Verification steps before completing
+```
+
+### Available Tools
+
+Gemini Agent has access to these tools when explicitly instructed:
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `google_web_search` | Search Google for information | When you need to find unknown information |
+| `web_fetch` | Read specific webpage content | When you have a known URL to read |
+
+See [references/structured-prompt-template.md](references/structured-prompt-template.md) for a reusable template.
+
 ## Output Format
 
 All outputs are saved as Markdown files with clear **Prompt-Response** structure:
@@ -127,6 +192,7 @@ Gemini's response here...
 
 *生成時間: 2026-02-01T19:51:17+08:00*  
 *耗時: 51秒*
+*成功嘗試: 第 2 次*
 ```
 
 This format ensures:
@@ -168,9 +234,9 @@ If status shows `failed`:
 | Inefficient | Efficient |
 |-----------------|----------------------------|
 | `gemini "Analyze report"` (no output file) | Use wrapper script with explicit output path |
-| `gemini "..." > file.md` (direct redirect) | Use wrapper script (guaranteed output) |
-| Save to `/tmp/` | Save to `workspace/gemini/...` |
+| Wrapper script saves to `/tmp/` | Wrapper script saves to `workspace/gemini/...` |
 | Sequential jobs without background | Use `background:true` for parallel execution |
+| "Research python-pptx" (may not use tools) | "Use `google_web_search` to find python-pptx documentation and tutorials" |
 
 ## Troubleshooting
 
@@ -190,7 +256,3 @@ See [references/troubleshooting.md](references/troubleshooting.md) for common is
 
 ---
 
-**Core Principle:**
-1. Delegate appropriate user requests to Gemini for background execution, saving outputs to the workspace for later retrieval and synthesis.
-2. Always validate outputs after each major workflow step; if critical results are missing, self-correct or flag for review before presenting to the user.
-3. Always use the wrapper script for reliable execution. The wrapper ensures output consistency and provides debugging capabilities through status tracking.
