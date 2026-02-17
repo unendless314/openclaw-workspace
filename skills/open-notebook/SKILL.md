@@ -86,6 +86,76 @@ See [references/api-reference.md](references/api-reference.md) for complete endp
 | `create_podcast.py` | Generate podcasts |
 | `check_status.py` | Check processing job status |
 
+## Python API Client
+
+For programmatic access, use the `OpenNotebookClient` class directly:
+
+```python
+from open_notebook_client import OpenNotebookClient
+
+client = OpenNotebookClient()  # Uses default http://localhost:5055
+# Or: client = OpenNotebookClient(base_url="http://host:port", password="...")
+```
+
+### Query Operations
+
+```python
+# List all notebooks
+notebooks = client.list_notebooks()
+
+# List all sources
+sources = client.list_sources()
+
+# List all notes
+notes = client.list_notes()
+# Or filter by notebook: client.list_notes(notebook_id="notebook:xxx")
+
+# Get specific notebook/source/note
+notebook = client.get_notebook("notebook:xxx")
+source = client.get_source("source:xxx")
+
+# Search knowledge base
+results = client.search("query", search_type="text")  # or "semantic"
+
+# Ask AI
+answer = client.ask("What are the key findings?")
+```
+
+### Create/Upload Operations
+
+```python
+# Create notebook
+nb = client.create_notebook("Research Project", "Description")
+
+# Upload file
+source = client.upload_file("/path/to/file.pdf", notebook_id="notebook:xxx")
+
+# Add URL source
+source = client.create_url_source("https://example.com", notebook_id="notebook:xxx")
+
+# Add text source
+source = client.create_text_source("Content here...", notebook_id="notebook:xxx", title="My Note")
+
+# Create note
+note = client.create_note("Note content", title="My Note", notebook_id="notebook:xxx")
+```
+
+### Other Operations
+
+```python
+# List AI models
+models = client.list_models()
+
+# List transformations
+transforms = client.list_transformations()
+
+# Check processing status
+status = client.get_command("command:xxx")
+
+# List podcasts
+podcasts = client.list_podcasts()
+```
+
 ## Docker Operations
 
 If service is not running, start it:

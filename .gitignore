@@ -1,0 +1,29 @@
+# OpenClaw 系統檔案
+.openclaw/
+.clawhub/
+
+# Python 快取和虛擬環境
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+
+# 輸出和暫存檔案
+output/
+*.log
+*.tmp
+
+# 測試和覆蓋率報告
+.coverage
+.pytest_cache/
+
+# 個人工具/大型專案（不備份到雲端）
+youtube_transcriber/
+
+# 備份檔案
+*~
+*.bak
+.DS_Store

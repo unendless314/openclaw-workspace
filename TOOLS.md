@@ -37,13 +37,24 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 ---
 
-## Custom Skills
+## Skill 使用偏好
 
-### gemini-agent
+遇到對應任務時，依此優先順序選用：
 
-位於 `workspace/skills/gemini-agent/`，提供統一的 Gemini Agent 執行 wrapper。
+1. **gemini-agent** - 研究、寫作、分析類任務首選
+2. **doc-coediting** - 文件協作、PRD、RFC 起草
+3. **kimi-agent** - 程式碼實作、除錯、審查
+4. **ai-project-architecture** - 專案架構設計、模組拆分
 
-需要委派任務給 Gemini 時，優先使用此 skill 而非官方 gemini skill。
+### 使用習慣
+- 偏好委派給子 agent，而非 main session 直接執行
+- 務必使用 SKILL.md 文檔中指定的 cli 腳本呼叫專用 agent
+
+---
+
+## Custom Skills 位置
+
+- **gemini-agent**: `workspace/skills/gemini-agent/` - 統一的 Gemini Agent 執行 wrapper
 
 ---
 

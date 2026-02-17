@@ -38,6 +38,7 @@ This skill includes `scripts/gemini-run.sh` which provides:
 - **Status tracking** - `.status` files show progress (pending/running/completed/failed)
 - **Timing metrics** - Duration tracking for each task
 - **Background support** - Proper PID management and monitoring
+- **File protection** - Output files are locked as read-only (`chmod 444`) after generation to prevent accidental overwrites. ⚠️ **Never edit the original output file directly** - extract content to a different file instead.
 
 ## Usage
 
@@ -80,7 +81,7 @@ bash command:"..." timeout:300
 bash command:"..." timeout:600
 ```
 
-**Don't be impatient**—complex tasks legitimately take 3-5 minutes. Premature termination wastes work and quota.
+**Be patient**—complex tasks legitimately take 3-5 minutes. Premature termination wastes work and quota.
 
 ## Directory Structure
 
@@ -237,6 +238,7 @@ If status shows `failed`:
 | Wrapper script saves to `/tmp/` | Wrapper script saves to `workspace/gemini/...` |
 | Sequential jobs without background | Use `background:true` for parallel execution |
 | "Research python-pptx" (may not use tools) | "Use `google_web_search` to find python-pptx documentation and tutorials" |
+| Editing the original output file directly | Extract content to a different file |
 
 ## Troubleshooting
 

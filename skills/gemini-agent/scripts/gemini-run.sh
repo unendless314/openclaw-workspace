@@ -12,6 +12,7 @@
 #   - 錯誤處理和狀態記錄（.status 檔案追蹤進度）
 #   - 執行時間統計
 #   - 🆕 自動重試機制（配額耗盡時自動等待重試）
+#   - 🔒 輸出檔案唯讀鎖定（防止意外覆蓋對話記錄）
 
 set -e
 
@@ -26,6 +27,7 @@ BACKGROUND=false
 PROMPT=""
 OUTPUT_FILE=""
 WORK_DIR=""
+FORCE_MODE=false  # 預設啟用檔案保護
 
 # 解析參數
 while [[ $# -gt 0 ]]; do
@@ -42,6 +44,11 @@ while [[ $# -gt 0 ]]; do
             MAX_RETRIES="$2"
             shift 2
             ;;
+        --force|-f)
+            # 強制模式：不設置唯讀鎖定（用於測試或特殊情況）
+            FORCE_MODE=true
+            shift
+            ;;
         --help|-h)
             echo "用法: $0 [選項] \"prompt\" \"output.md\""
             echo ""
@@ -49,12 +56,19 @@ while [[ $# -gt 0 ]]; do
             echo "  --background, -b    背景執行模式"
             echo "  --work-dir, -w      工作目錄"
             echo "  --max-retries N     最大重試次數（預設: 3）"
+            echo "  --force, -f         強制模式（不鎖定輸出檔，慎用）"
             echo "  --help, -h          顯示說明"
             echo ""
             echo "重試策略:"
             echo "  - 自動檢測配額耗盡錯誤 ('exhausted your capacity')"
             echo "  - 指數退避：3s → 6s → 12s"
             echo "  - 最大重試次數: $MAX_RETRIES 次"
+            echo ""
+            echo "檔案保護:"
+            echo "  - 預設會將輸出檔設為唯讀 (chmod 444)"
+            echo "  - 創建 .protected 標記檔案說明保護原因"
+            echo "  - 如需編輯，請先複製到新檔案而非直接修改"
+            echo "  - 使用 --force 可跳過鎖定（不建議）"
             echo ""
             echo "範例:"
             echo "  $0 \"研究 AI 趨勢\" \"./output/ai-trends.md\""
@@ -99,6 +113,35 @@ is_quota_exhausted() {
         return 0
     fi
     return 1
+}
+
+# 鎖定輸出檔案（如果非強制模式）
+lock_output_file() {
+    local output="$1"
+    if [ "$FORCE_MODE" != "true" ]; then
+        chmod 444 "$output"
+        
+        # 創建 .protected 標記檔案
+        cat > "${output}.protected" << 'PROTECTED_EOF'
+⚠️  PROTECTED FILE - DO NOT MODIFY
+
+此檔案由 gemini-run.sh 自動生成並鎖定為唯讀。
+
+為什麼不能修改？
+- 這是一份「對話記錄檔案」，包含完整的 Prompt、Response、Metadata
+- 任何修改都會破壞歷史記錄的完整性
+- 如需提取內容，請複製到新檔案而非直接編輯
+
+正確用法：
+  1. 讀取此檔案：cat this-file.md
+  2. 提取你需要的內容
+  3. 寫入到新路徑：cat extracted-content.md > skills/your-skill/SKILL.md
+
+如需解除鎖定（不建議）：
+  chmod 644 this-file.md
+PROTECTED_EOF
+        chmod 444 "${output}.protected"
+    fi
 }
 
 # 執行一次 gemini 呼叫
@@ -162,6 +205,9 @@ EOF
             
             rm -f "$temp_response"
             
+            # 🔒 鎖定輸出檔案為唯讀，防止意外覆蓋
+            lock_output_file "$output"
+            
             echo "status: completed" > "$STATUS_FILE"
             echo "completed_at: $(date -Iseconds)" >> "$STATUS_FILE"
             echo "duration_seconds: $total_duration" >> "$STATUS_FILE"
@@ -172,6 +218,9 @@ EOF
                 echo "✅ Gemini 任務完成 (${total_duration}s，經過 $attempt 次嘗試)" >&2
             else
                 echo "✅ Gemini 任務完成 (${total_duration}s)" >&2
+            fi
+            if [ "$FORCE_MODE" != "true" ]; then
+                echo "   🔒 輸出檔已鎖定為唯讀（保護對話記錄）" >&2
             fi
             echo "   輸出: $output" >&2
             return 0
